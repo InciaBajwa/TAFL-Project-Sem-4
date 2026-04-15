@@ -1,0 +1,124 @@
+body {
+    font-family:'Times New Roman', Times, serif;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+    margin: 0%;
+}
+
+h1{
+    margin : 20px;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    height: 80vh; 
+    gap: 10px;
+}
+
+.output {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+.modeSelector {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px;
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.controls, .output{
+    flex: 0 0 250px;
+    margin: 20px;
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 10px;
+    width : 30%;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+input {
+    margin: 5px;
+    padding: 5px;
+}
+
+button {
+    padding: 6px 10px;
+    background: #38bdf8;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0c8ecb;
+}
+
+.graph {
+    flex: 1;
+    background:white;
+    margin: 20px;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* State circles */
+.state {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #38bdf8;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+/* Final state (double circle effect) */
+.final {
+    border: 3px solid white;
+}
+
+/* Highlight during simulation */
+.active {
+    background: #22c55e;
+    box-shadow: 0 0 15px #22c55e;
+}
+
+#edges {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.edge {
+    stroke: #0c8ecb;
+    stroke-width: 1;
+    color: #0c8ecb;
+    transition: 0.3s;
+}
+
+.label {
+    fill: #0c8ecb;
+    font-size: 12px;
+}
+
+.edge.active {
+    stroke: #22c55e;
+    stroke-width: 4;
+}

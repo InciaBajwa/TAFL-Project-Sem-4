@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Finite Automata Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Finite Automata Simulator</h1>
+
+<div class = "modeSelector">
+    <h2> Select Mode : </h2>
+    <select id="mode">
+        <option value="dfa"> DFA </option>
+        <option value="nfa"> NFA </option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="controls">
+        <h2> Controls </h2>
+
+        <input type="text" id="stateName" placeholder="State name (q0)">
+        <button onclick="addState()">Add State</button>
+
+        <br><br>
+
+        <input type="text" id="fromState" placeholder="From">
+        <input type="text" id="toState" placeholder="To">
+        <input type="text" id="symbol" placeholder="Symbol">
+        <button onclick="addTransition()">Add Transition</button>
+
+        <br><br>
+
+        <input type="text" id="startState" placeholder="Start State">
+        <button onclick="setStart()">Set Start</button>
+
+        <br><br>
+
+        <input type="text" id="finalState" placeholder="Final State">
+        <button onclick="setFinal()">Add Final</button>
+
+        <br><br>
+
+        <input type="text" id="inputString" placeholder="Input String">
+        <button onclick="simulate()">Simulate</button>
+    </div>
+
+    <div class="output">
+        <h2>States</h2>
+        <ul id="statesList"></ul>
+        <br><br>
+
+        <h2>Transitions</h2>
+        <ul id="transitionsList"></ul>
+        <br><br>
+
+        <h2>Result</h2>
+        <p id="result"></p>
+    </div>
+
+    <div class="graph" id="graph">
+        <svg id="edges"></svg>
+    </div>
+
+</div>
+<script src="script.js"></script>
+
+</body>
+</html>
