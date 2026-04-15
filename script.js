@@ -155,7 +155,6 @@ async function simulate() {
     }
 
     // NFA Mode
-    // NFA Mode
     else {
 
         let currentStates = [startState];
@@ -175,7 +174,7 @@ async function simulate() {
 
                     for (let next of transitions[state][char]) {
 
-                        // 🔥 Highlight edge
+                        // Highlight edge
                         let edge = cy.edges().filter(e =>
                             e.data('source') === state &&
                             e.data('target') === next &&
@@ -184,7 +183,7 @@ async function simulate() {
 
                         edge.addClass('highlighted');
 
-                        // slight delay so user can SEE it
+                        // slight delay so user can see it
                         await new Promise(r => setTimeout(r, 250));
 
                         edge.removeClass('highlighted');
@@ -197,14 +196,14 @@ async function simulate() {
             // remove duplicates
             currentStates = [...new Set(nextStates)];
 
-            // ❌ dead state case
+            // dead state case
             if (currentStates.length === 0) {
                 document.getElementById("result").innerText = "Rejected ❌";
                 return;
             }
         }
 
-        // ✅ acceptance check
+        // acceptance check
         let accepted = currentStates.some(state =>
             finalStates.includes(state)
         );
@@ -362,7 +361,7 @@ function drawGraph() {
         ],
 
         layout: {
-            name: 'circle',   // 👈 BEST for your case
+            name: 'circle',
             padding: 30,
             avoidOverlap: true
         }
