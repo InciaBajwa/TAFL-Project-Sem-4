@@ -62,63 +62,10 @@ button:hover {
     background: #0c8ecb;
 }
 
-.graph {
+#cy {
     flex: 1;
-    background:white;
-    margin: 20px;
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-}
-
-/* State circles */
-.state {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #38bdf8;
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-/* Final state (double circle effect) */
-.final {
-    border: 3px solid white;
-}
-
-/* Highlight during simulation */
-.active {
-    background: #22c55e;
-    box-shadow: 0 0 15px #22c55e;
-}
-
-#edges {
-    position: absolute;
-    width: 100%;
     height: 100%;
-    pointer-events: none;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
-
-.edge {
-    stroke: #0c8ecb;
-    stroke-width: 1;
-    color: #0c8ecb;
-    transition: 0.3s;
-}
-
-.label {
-    fill: #0c8ecb;
-    font-size: 12px;
-}
-
-.edge.active {
-    stroke: #22c55e;
-    stroke-width: 4;
+    background: white;
+    border-radius: 10px;
+    margin: 20px;
 }
