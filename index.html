@@ -13,16 +13,62 @@
 
 <div class="app-shell">
     <header class="hero">
+        <div class="hero-top">
+            <span class="hero-chip">Theory + Visual Simulation</span>
+            <button id="themeToggle" class="btn-secondary" type="button" onclick="toggleTheme()">Dark Mode</button>
+        </div>
         <h1>Finite Automata Simulator</h1>
         <p>Build and test DFA/NFA machines with an interactive transition graph.</p>
     </header>
 
     <div class="modeSelector">
         <label for="mode">Simulation Mode</label>
-        <select id="mode">
-            <option value="dfa">DFA</option>
-            <option value="nfa">NFA</option>
-        </select>
+        <div class="mode-controls">
+            <select id="mode">
+                <option value="dfa">DFA</option>
+                <option value="nfa">NFA</option>
+            </select>
+            <button type="button" class="btn-secondary" onclick="viewDefinition()">View Definition</button>
+        </div>
+    </div>
+
+    <section class="definition-start">
+        <h2>Core Definitions</h2>
+        <div class="definition-grid">
+            <article class="definition-card" id="dfaCard">
+                <h3>DFA</h3>
+                <p>
+                    A Deterministic Finite Automaton has exactly one transition for each symbol from each state.
+                    At any step, only one next state is possible.
+                </p>
+            </article>
+            <article class="definition-card" id="nfaCard">
+                <h3>NFA</h3>
+                <p>
+                    A Nondeterministic Finite Automaton can have multiple possible transitions for the same symbol.
+                    At any step, many next states may be explored in parallel.
+                </p>
+            </article>
+        </div>
+    </section>
+
+    <div class="status-strip">
+        <div class="status-item">
+            <span>Mode</span>
+            <strong id="modeBadge">DFA</strong>
+        </div>
+        <div class="status-item">
+            <span>States</span>
+            <strong id="stateCount">0</strong>
+        </div>
+        <div class="status-item">
+            <span>Transitions</span>
+            <strong id="transitionCount">0</strong>
+        </div>
+        <div class="status-item">
+            <span>Finals</span>
+            <strong id="finalCount">0</strong>
+        </div>
     </div>
 
     <div class="container">
@@ -31,27 +77,27 @@
 
             <div class="action-card">
                 <h3>Create State</h3>
-                <input type="text" id="stateName" placeholder="State name (q0)">
+                <input type="text" id="stateName" placeholder="State name (q0)" autocomplete="off">
                 <button onclick="addState()">Add State</button>
             </div>
 
             <div class="action-card">
                 <h3>Create Transition</h3>
-                <input type="text" id="fromState" placeholder="From">
-                <input type="text" id="toState" placeholder="To">
-                <input type="text" id="symbol" placeholder="Symbol">
+                <input type="text" id="fromState" placeholder="From" autocomplete="off">
+                <input type="text" id="toState" placeholder="To" autocomplete="off">
+                <input type="text" id="symbol" placeholder="Symbol" autocomplete="off">
                 <button onclick="addTransition()">Add Transition</button>
             </div>
 
             <div class="action-card">
                 <h3>Set Start State</h3>
-                <input type="text" id="startState" placeholder="Start state">
+                <input type="text" id="startState" placeholder="Start state" autocomplete="off">
                 <button onclick="setStart()">Set Start</button>
             </div>
 
             <div class="action-card">
                 <h3>Mark Final State</h3>
-                <input type="text" id="finalState" placeholder="Final state">
+                <input type="text" id="finalState" placeholder="Final state" autocomplete="off">
                 <button onclick="setFinal()">Add Final</button>
             </div>
 
@@ -59,6 +105,7 @@
                 <h3>Run Simulation</h3>
                 <input type="text" id="inputString" placeholder="Input string">
                 <button onclick="simulate()">Simulate</button>
+                <button class="btn-secondary" onclick="resetMachine()">Reset Machine</button>
             </div>
         </aside>
 
@@ -66,13 +113,19 @@
             <h2>Machine Data</h2>
 
             <div class="list-panel">
-                <h3>States</h3>
+                <h3>States <span class="mini-badge" id="statesMiniCount">0</span></h3>
                 <ul id="statesList"></ul>
             </div>
 
             <div class="list-panel">
-                <h3>Transitions</h3>
+                <h3>Transitions <span class="mini-badge" id="transitionsMiniCount">0</span></h3>
                 <ul id="transitionsList"></ul>
+            </div>
+
+            <div class="list-panel table-panel">
+                <h3 id="transitionTableTitle">Transition Table (DFA)</h3>
+                <p id="transitionTableHint" class="table-hint">Add states and transitions to generate the table.</p>
+                <div id="transitionTableWrap" class="transition-table-wrap"></div>
             </div>
 
             <div class="result-panel">
@@ -85,6 +138,14 @@
             <h2>Transition Graph</h2>
             <div id="cy"></div>
         </section>
+    </div>
+</div>
+
+<div id="definitionModal" class="definition-modal hidden" aria-hidden="true">
+    <div class="definition-modal-card">
+        <h3 id="definitionTitle">Definition</h3>
+        <p id="definitionBody"></p>
+        <button type="button" class="btn-secondary" onclick="hideDefinition()">Close</button>
     </div>
 </div>
 
