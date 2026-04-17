@@ -2,65 +2,90 @@
 <html>
 <head>
     <title>Finite Automata Simulator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body onload="initGraph()">
 
-<h1>Finite Automata Simulator</h1>
+<div class="app-shell">
+    <header class="hero">
+        <h1>Finite Automata Simulator</h1>
+        <p>Build and test DFA/NFA machines with an interactive transition graph.</p>
+    </header>
 
-<div class = "modeSelector">
-    <h2> Select Mode : </h2>
-    <select id="mode">
-        <option value="dfa"> DFA </option>
-        <option value="nfa"> NFA </option>
-    </select>
-</div>
-
-<div class="container">
-    <div class="controls">
-        <h2> Controls </h2>
-
-        <input type="text" id="stateName" placeholder="State name (q0)">
-        <button onclick="addState()">Add State</button>
-
-        <br><br>
-
-        <input type="text" id="fromState" placeholder="From">
-        <input type="text" id="toState" placeholder="To">
-        <input type="text" id="symbol" placeholder="Symbol">
-        <button onclick="addTransition()">Add Transition</button>
-
-        <br><br>
-
-        <input type="text" id="startState" placeholder="Start State">
-        <button onclick="setStart()">Set Start</button>
-
-        <br><br>
-
-        <input type="text" id="finalState" placeholder="Final State">
-        <button onclick="setFinal()">Add Final</button>
-
-        <br><br>
-
-        <input type="text" id="inputString" placeholder="Input String">
-        <button onclick="simulate()">Simulate</button>
+    <div class="modeSelector">
+        <label for="mode">Simulation Mode</label>
+        <select id="mode">
+            <option value="dfa">DFA</option>
+            <option value="nfa">NFA</option>
+        </select>
     </div>
 
-    <div class="output">
-        <h2>States</h2>
-        <ul id="statesList"></ul>
-        <br><br>
+    <div class="container">
+        <aside class="controls">
+            <h2>Machine Setup</h2>
 
-        <h2>Transitions</h2>
-        <ul id="transitionsList"></ul>
-        <br><br>
+            <div class="action-card">
+                <h3>Create State</h3>
+                <input type="text" id="stateName" placeholder="State name (q0)">
+                <button onclick="addState()">Add State</button>
+            </div>
 
-        <h2>Result</h2>
-        <p id="result"></p>
+            <div class="action-card">
+                <h3>Create Transition</h3>
+                <input type="text" id="fromState" placeholder="From">
+                <input type="text" id="toState" placeholder="To">
+                <input type="text" id="symbol" placeholder="Symbol">
+                <button onclick="addTransition()">Add Transition</button>
+            </div>
+
+            <div class="action-card">
+                <h3>Set Start State</h3>
+                <input type="text" id="startState" placeholder="Start state">
+                <button onclick="setStart()">Set Start</button>
+            </div>
+
+            <div class="action-card">
+                <h3>Mark Final State</h3>
+                <input type="text" id="finalState" placeholder="Final state">
+                <button onclick="setFinal()">Add Final</button>
+            </div>
+
+            <div class="action-card">
+                <h3>Run Simulation</h3>
+                <input type="text" id="inputString" placeholder="Input string">
+                <button onclick="simulate()">Simulate</button>
+            </div>
+        </aside>
+
+        <section class="output">
+            <h2>Machine Data</h2>
+
+            <div class="list-panel">
+                <h3>States</h3>
+                <ul id="statesList"></ul>
+            </div>
+
+            <div class="list-panel">
+                <h3>Transitions</h3>
+                <ul id="transitionsList"></ul>
+            </div>
+
+            <div class="result-panel">
+                <h3>Result</h3>
+                <p id="result" class="state-info">Run a simulation to see acceptance output.</p>
+            </div>
+        </section>
+
+        <section class="graph-panel">
+            <h2>Transition Graph</h2>
+            <div id="cy"></div>
+        </section>
     </div>
-
-    <div id="cy" style="width: 100%; height: 80vh;"></div>
-
 </div>
 
 <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>

@@ -4,6 +4,44 @@ let startState = null;
 let finalStates = [];
 let cy = null;
 
+function setResultMessage(message, stateClass = "state-info") {
+    const resultEl = document.getElementById("result");
+    resultEl.innerText = message;
+    resultEl.classList.remove("state-info", "state-accepted", "state-rejected");
+    resultEl.classList.add(stateClass);
+}
+
+function getNodePositions() {
+    const positions = {};
+    const totalStates = states.length;
+
+    if (totalStates === 0 || !cy) {
+        return positions;
+    }
+
+    const width = Math.max(cy.width(), 300);
+    const height = Math.max(cy.height(), 300);
+    const padding = 70;
+    const usableWidth = Math.max(width - padding * 2, 140);
+    const usableHeight = Math.max(height - padding * 2, 140);
+    const columns = Math.max(1, Math.ceil(Math.sqrt(totalStates)));
+    const rows = Math.max(1, Math.ceil(totalStates / columns));
+    const cellWidth = usableWidth / columns;
+    const cellHeight = usableHeight / rows;
+
+    states.forEach((state, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+
+        positions[state] = {
+            x: padding + (column + 0.5) * cellWidth,
+            y: padding + (row + 0.5) * cellHeight
+        };
+    });
+
+    return positions;
+}
+
 // Add State
 function addState() {
     let state = document.getElementById("stateName").value;
@@ -119,13 +157,12 @@ async function simulate() {
 
         for (let char of input) {
 
-            document.getElementById("result").innerText =
-                `Reading: ${char}, Current State: ${current}`;
+            setResultMessage(`Reading: ${char}, Current State: ${current}`, "state-info");
 
             await new Promise(r => setTimeout(r, 300));
 
             if (!transitions[current] || !transitions[current][char]) {
-                document.getElementById("result").innerText = "Rejected ❌";
+                setResultMessage("Rejected ❌", "state-rejected");
                 return;
             }
 
@@ -147,9 +184,9 @@ async function simulate() {
         }
 
         if (finalStates.includes(current)) {
-            document.getElementById("result").innerText = "Accepted ✅";
+            setResultMessage("Accepted ✅", "state-accepted");
         } else {
-            document.getElementById("result").innerText = "Rejected ❌";
+            setResultMessage("Rejected ❌", "state-rejected");
         }
 
     }
@@ -161,8 +198,7 @@ async function simulate() {
 
         for (let char of input) {
 
-            document.getElementById("result").innerText =
-                `Reading: ${char}\nCurrent States: ${currentStates.join(", ")}`;
+            setResultMessage(`Reading: ${char}\nCurrent States: ${currentStates.join(", ")}`, "state-info");
 
             await new Promise(r => setTimeout(r, 500));
 
@@ -198,7 +234,7 @@ async function simulate() {
 
             // dead state case
             if (currentStates.length === 0) {
-                document.getElementById("result").innerText = "Rejected ❌";
+                setResultMessage("Rejected ❌", "state-rejected");
                 return;
             }
         }
@@ -208,23 +244,25 @@ async function simulate() {
             finalStates.includes(state)
         );
 
-        document.getElementById("result").innerText =
-            accepted ? "Accepted ✅" : "Rejected ❌";
+        setResultMessage(accepted ? "Accepted ✅" : "Rejected ❌", accepted ? "state-accepted" : "state-rejected");
     }
 }
 
 function drawGraph() {
 
-    if (cy) {
-        cy.destroy();
-    }
+    if (!cy) return;
 
+    cy.resize();
+    cy.elements().remove();
+
+    const positions = getNodePositions();
     let elements = [];
 
     // Add nodes
     states.forEach((state, index) => {
         elements.push({
-            data: { id: state, label: state }
+            data: { id: state, label: state },
+            position: positions[state]
         });
     });
 
@@ -272,38 +310,66 @@ function drawGraph() {
         }
     }
 
+    cy.add(elements);
+
+    cy.layout({
+        name: 'preset',
+        fit: true,
+        padding: 30,
+        animate: false
+    }).run();
+
+    // Apply start + final classes
+    if (startState) {
+        cy.getElementById(startState).addClass('start');
+    }
+
+    finalStates.forEach(s => {
+        cy.getElementById(s).addClass('final');
+    });
+
+    // cy.nodes().grabify();
+}
+
+function initGraph() {
     cy = cytoscape({
         container: document.getElementById('cy'),
 
-        elements: elements,
+        elements: [],
 
         style: [
             {
                 selector: 'node',
                 style: {
-                    'background-color': '#38bdf8',
+                    'width': 68,
+                    'height': 68,
+                    'font-size': 18,
+                    'text-wrap': 'wrap',
+                    'text-max-width': 54,
+
+                    'background-color': '#0f766e',
                     'label': 'data(label)',
                     'color': '#fff',
                     'text-valign': 'center',
                     'text-halign': 'center',
                     'border-width': 2,
-                    'border-color': '#fff'
+                    'border-color': '#d1f4ef'
                 }
             },
 
             {
                 selector: 'node.final',
                 style: {
-                    'border-width': 6,
-                    'border-color': 'gold'
+                    'border-width': 8,
+                    'border-color': '#f59e0b'
                 }
             },
 
             {
                 selector: 'node.start',
                 style: {
-                    'border-color': 'yellow',
-                    'border-width': 4
+                    'border-color': '#facc15',
+                    'border-width': 6
                 }
             },
 
@@ -314,18 +380,18 @@ function drawGraph() {
                     'control-point-distance': 'data(curve)',
 
                     'target-arrow-shape': 'triangle',
-                    'target-arrow-color': '#fff',
-                    'target-arrow-scale': 0.8,
-                    'line-color': '#aaa',
+                    'target-arrow-color': '#475569',
+                    'target-arrow-scale': 1,
+                    'line-color': '#64748b',
 
-                    'width': 2,
+                    'width': 3,
 
                     'label': 'data(label)',
-                    'font-size': 12,
-                    'color': '#fff',
+                    'font-size': 14,
+                    'color': '#1f2937',
 
-                    'text-background-color': '#0f172a',
-                    'text-background-opacity': 1,
+                    'text-background-color': '#fffdf9',
+                    'text-background-opacity': 0.9,
                     'text-background-padding': 3,
 
                     'text-margin-y': -10
@@ -335,8 +401,8 @@ function drawGraph() {
             {
                 selector: 'edge.highlighted',
                 style: {
-                    'line-color': 'yellow',
-                    'target-arrow-color': 'yellow',
+                    'line-color': '#f59e0b',
+                    'target-arrow-color': '#f59e0b',
                     'width': 4,
                     'transition-property': 'line-color, target-arrow-color, width',
                     'transition-duration': '0.2s'
@@ -351,8 +417,8 @@ function drawGraph() {
                     'loop-sweep': '90deg',
 
                     'target-arrow-shape': 'triangle',
-                    'target-arrow-color': '#fff',
-                    'line-color': '#aaa',
+                    'target-arrow-color': '#475569',
+                    'line-color': '#64748b',
 
                     'label': 'data(label)',
                     'text-margin-y': -15
@@ -361,22 +427,18 @@ function drawGraph() {
         ],
 
         layout: {
-            name: 'circle',
+            name: 'preset',
+            fit: true,
             padding: 30,
-            avoidOverlap: true
+            animate: false
         }
     });
 
-    // Apply start + final classes
-    if (startState) {
-        cy.getElementById(startState).addClass('start');
-    }
+    cy.minZoom(0.5);
+    cy.maxZoom(1.5);
 
-    finalStates.forEach(s => {
-        cy.getElementById(s).addClass('final');
+    window.addEventListener('resize', () => {
+        if (!cy) return;
+        drawGraph();
     });
-
-    cy.nodes().grabify();
-    cy.center();
-    cy.fit();
 }
