@@ -15,19 +15,18 @@
     <header class="hero">
         <div class="hero-top">
             <span class="hero-chip">Theory + Visual Simulation</span>
-            <button id="themeToggle" class="btn-secondary" type="button" onclick="toggleTheme()">Dark Mode</button>
         </div>
         <h1>Finite Automata Simulator</h1>
         <p>Build and test DFA/NFA machines with an interactive transition graph.</p>
     </header>
 
     <div class="modeSelector">
-        <label for="mode">Simulation Mode</label>
+        <label>Simulation Mode</label>
         <div class="mode-controls">
-            <select id="mode">
-                <option value="dfa">DFA</option>
-                <option value="nfa">NFA</option>
-            </select>
+            <div class="mode-toggle" role="group" aria-label="Simulation Mode">
+                <button type="button" id="modeDfaBtn" data-mode="dfa" class="mode-btn active" onclick="setMode('dfa')">DFA</button>
+                <button type="button" id="modeNfaBtn" data-mode="nfa" class="mode-btn" onclick="setMode('nfa')">NFA</button>
+            </div>
             <button type="button" class="btn-secondary" onclick="viewDefinition()">View Definition</button>
         </div>
     </div>
@@ -69,6 +68,12 @@
             <span>Finals</span>
             <strong id="finalCount">0</strong>
         </div>
+    </div>
+
+    <div class="quickbar">
+        <span class="quick-pill"><strong>[S]</strong> Start State</span>
+        <span class="quick-pill"><strong>[F]</strong> Final State</span>
+        <span class="quick-pill">DFA/NFA Transition Tables Included</span>
     </div>
 
     <div class="container">
@@ -132,14 +137,24 @@
                 <h3>Result</h3>
                 <p id="result" class="state-info">Run a simulation to see acceptance output.</p>
             </div>
+
+            <div class="list-panel timeline-panel">
+                <h3>Simulation Timeline</h3>
+                <ul id="timelineList">
+                    <li>No simulation steps yet.</li>
+                </ul>
+            </div>
         </section>
 
         <section class="graph-panel">
             <h2>Transition Graph</h2>
+            <p class="graph-note">Tip: drag nodes for better visibility in dense automata.</p>
             <div id="cy"></div>
         </section>
     </div>
 </div>
+
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div id="definitionModal" class="definition-modal hidden" aria-hidden="true">
     <div class="definition-modal-card">

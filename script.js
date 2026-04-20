@@ -3,7 +3,7 @@ let transitions = {};
 let startState = null;
 let finalStates = [];
 let cy = null;
-const THEME_KEY = "fa-sim-theme";
+let timelineSteps = [];
 const definitions = {
     dfa: {
         title: "DFA Definition",
@@ -15,13 +15,56 @@ const definitions = {
     }
 };
 
-function buildCyStyle(theme = "light") {
-    const dark = theme === "dark";
-    const nodeColor = dark ? "#ff7bd5" : "#ff5c8a";
-    const nodeBorder = dark ? "#ffd5f4" : "#ffe4f0";
-    const edgeColor = dark ? "#8fe9ff" : "#3bc9db";
-    const textColor = dark ? "#ece9ff" : "#5a2e5f";
-    const textBg = dark ? "#1b1b43" : "#fff8ea";
+function showToast(message, type = "info", duration = 2400) {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerText = message;
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add("show");
+    });
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 220);
+    }, duration);
+}
+
+function setTimeline(steps) {
+    timelineSteps = [...steps];
+    const list = document.getElementById("timelineList");
+    if (!list) return;
+    list.innerHTML = "";
+
+    if (timelineSteps.length === 0) {
+        const li = document.createElement("li");
+        li.innerText = "No simulation steps yet.";
+        list.appendChild(li);
+        return;
+    }
+
+    timelineSteps.forEach(step => {
+        const li = document.createElement("li");
+        li.innerText = step;
+        list.appendChild(li);
+    });
+}
+
+function appendTimeline(step) {
+    timelineSteps.push(step);
+    setTimeline(timelineSteps);
+}
+
+function buildCyStyle() {
+    const nodeColor = "#ff5c8a";
+    const nodeBorder = "#ffe4f0";
+    const edgeColor = "#3bc9db";
+    const textColor = "#5a2e5f";
+    const textBg = "#fff8ea";
 
     return [
         {
@@ -100,39 +143,6 @@ function buildCyStyle(theme = "light") {
     ];
 }
 
-function getCurrentTheme() {
-    return document.documentElement.getAttribute("data-theme") || "light";
-}
-
-function applyCyTheme(theme) {
-    if (!cy) return;
-    cy.style(buildCyStyle(theme));
-}
-
-function applyTheme(theme, shouldPersist = true) {
-    document.documentElement.setAttribute("data-theme", theme);
-    const toggleBtn = document.getElementById("themeToggle");
-    if (toggleBtn) {
-        toggleBtn.innerText = theme === "dark" ? "Light Mode" : "Dark Mode";
-    }
-    if (shouldPersist) {
-        localStorage.setItem(THEME_KEY, theme);
-    }
-    applyCyTheme(theme);
-}
-
-function initTheme() {
-    const savedTheme = localStorage.getItem(THEME_KEY);
-    const preferredDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme = savedTheme || (preferredDark ? "dark" : "light");
-    applyTheme(theme, false);
-}
-
-function toggleTheme() {
-    const nextTheme = getCurrentTheme() === "dark" ? "light" : "dark";
-    applyTheme(nextTheme, true);
-}
-
 function setResultMessage(message, stateClass = "state-info") {
     const resultEl = document.getElementById("result");
     resultEl.innerText = message;
@@ -142,6 +152,27 @@ function setResultMessage(message, stateClass = "state-info") {
 
 function cleanInput(id) {
     return document.getElementById(id).value.trim();
+}
+
+function getSelectedMode() {
+    const activeBtn = document.querySelector(".mode-btn.active");
+    return activeBtn ? activeBtn.dataset.mode : "dfa";
+}
+
+function setMode(mode, { silent = false } = {}) {
+    const dfaBtn = document.getElementById("modeDfaBtn");
+    const nfaBtn = document.getElementById("modeNfaBtn");
+    if (!dfaBtn || !nfaBtn) return;
+
+    dfaBtn.classList.toggle("active", mode === "dfa");
+    nfaBtn.classList.toggle("active", mode === "nfa");
+
+    updateStats();
+    updateDefinitionHighlight();
+    setResultMessage("Mode changed. Run simulation again with current machine.", "state-info");
+    if (!silent) {
+        showToast("Mode changed.", "info");
+    }
 }
 
 function getTransitionCount() {
@@ -156,7 +187,7 @@ function getTransitionCount() {
 
 function updateStats() {
     const uniqueFinals = [...new Set(finalStates)];
-    const modeValue = document.getElementById("mode").value.toUpperCase();
+    const modeValue = getSelectedMode().toUpperCase();
 
     document.getElementById("modeBadge").innerText = modeValue;
     document.getElementById("stateCount").innerText = String(states.length);
@@ -199,13 +230,60 @@ function formatTransitionCell(mode, targets) {
     return { text: `{${targets.join(", ")}}`, className: "" };
 }
 
+function removeTransitionEntry(state, symbol) {
+    if (!transitions[state] || !transitions[state][symbol]) return;
+    delete transitions[state][symbol];
+    if (Object.keys(transitions[state]).length === 0) {
+        delete transitions[state];
+    }
+}
+
+function applyTransitionEdit(state, symbol, rawInput) {
+    const mode = getSelectedMode();
+    const input = rawInput.trim();
+
+    if (mode === "dfa") {
+        if (!input || input === "-" || input === "{}") {
+            removeTransitionEntry(state, symbol);
+            return { ok: true, message: `Cleared transition ${state} on '${symbol}'.` };
+        }
+        if (!states.includes(input)) {
+            return { ok: false, message: `State '${input}' does not exist.` };
+        }
+        if (!transitions[state]) transitions[state] = {};
+        transitions[state][symbol] = [input];
+        return { ok: true, message: `Updated ${state} --${symbol}--> ${input}` };
+    }
+
+    // NFA mode: comma-separated states, '{}'/'-' to clear
+    if (!input || input === "{}" || input === "-") {
+        removeTransitionEntry(state, symbol);
+        return { ok: true, message: `Cleared transition set ${state} on '${symbol}'.` };
+    }
+
+    const parsed = input.split(",").map(s => s.trim()).filter(Boolean);
+    if (parsed.length === 0) {
+        removeTransitionEntry(state, symbol);
+        return { ok: true, message: `Cleared transition set ${state} on '${symbol}'.` };
+    }
+
+    const invalid = parsed.find(s => !states.includes(s));
+    if (invalid) {
+        return { ok: false, message: `State '${invalid}' does not exist.` };
+    }
+
+    if (!transitions[state]) transitions[state] = {};
+    transitions[state][symbol] = [...new Set(parsed)];
+    return { ok: true, message: `Updated ${state} on '${symbol}' to {${transitions[state][symbol].join(", ")}}` };
+}
+
 function updateTransitionTable() {
     const titleEl = document.getElementById("transitionTableTitle");
     const hintEl = document.getElementById("transitionTableHint");
     const wrapEl = document.getElementById("transitionTableWrap");
     if (!titleEl || !hintEl || !wrapEl) return;
 
-    const mode = document.getElementById("mode").value;
+    const mode = getSelectedMode();
     const alphabet = getAlphabet();
     titleEl.innerText = `Transition Table (${mode.toUpperCase()})`;
 
@@ -258,6 +336,9 @@ function updateTransitionTable() {
 
         alphabet.forEach(symbol => {
             const cell = document.createElement("td");
+            cell.classList.add("editable-cell");
+            cell.dataset.state = state;
+            cell.dataset.symbol = symbol;
             const targets = transitions[state] && transitions[state][symbol]
                 ? transitions[state][symbol]
                 : [];
@@ -266,6 +347,7 @@ function updateTransitionTable() {
             if (className) {
                 cell.classList.add(className);
             }
+            cell.title = "Click to edit transition";
             row.appendChild(cell);
         });
 
@@ -278,13 +360,13 @@ function updateTransitionTable() {
 }
 
 function updateDefinitionHighlight() {
-    const mode = document.getElementById("mode").value;
+    const mode = getSelectedMode();
     document.getElementById("dfaCard").classList.toggle("active", mode === "dfa");
     document.getElementById("nfaCard").classList.toggle("active", mode === "nfa");
 }
 
 function viewDefinition() {
-    const mode = document.getElementById("mode").value;
+    const mode = getSelectedMode();
     const info = definitions[mode];
     const modal = document.getElementById("definitionModal");
 
@@ -335,11 +417,11 @@ function getNodePositions() {
 function addState() {
     let state = cleanInput("stateName");
     if (!state) {
-        alert("Please enter a state name.");
+        showToast("Please enter a state name.", "error");
         return;
     }
     if (states.includes(state)) {
-        alert("State already exists!");
+        showToast("State already exists!", "error");
         return;
     }
     states.push(state);
@@ -348,6 +430,7 @@ function addState() {
     drawGraph();
 
     document.getElementById("stateName").value = "";
+    showToast(`State '${state}' added.`, "success");
 }
 
 // Add Transition
@@ -357,12 +440,12 @@ function addTransition() {
     let symbol = cleanInput("symbol").toLowerCase();
 
     if (!from || !to || !symbol) {
-        alert("Please fill all transition fields.");
+        showToast("Please fill all transition fields.", "error");
         return;
     }
 
     if (!states.includes(from) || !states.includes(to)) {
-        alert("State does not exist!");
+        showToast("State does not exist!", "error");
         return;
     }
 
@@ -375,7 +458,7 @@ function addTransition() {
     }
 
     if (transitions[from][symbol].includes(to)) {
-        alert("Transition already exists!");
+        showToast("Transition already exists!", "error");
         return;
     }
 
@@ -388,23 +471,25 @@ function addTransition() {
     document.getElementById("fromState").value = "";
     document.getElementById("toState").value = "";
     document.getElementById("symbol").value = "";
+    showToast(`Transition ${from} --${symbol}--> ${to} added.`, "success");
 }
 
 // Set Start State
 function setStart() {
     const state = cleanInput("startState");
     if (!state) {
-        alert("Please enter a start state.");
+        showToast("Please enter a start state.", "error");
         return;
     }
     if (!states.includes(state)) {
-        alert("Start state must be an existing state.");
+        showToast("Start state must be an existing state.", "error");
         return;
     }
     startState = state;
 
     drawGraph();
     setResultMessage(`Start state set to ${state}.`, "state-info");
+    showToast(`Start state set to ${state}.`, "success");
     updateStats();
 
 }
@@ -413,15 +498,15 @@ function setStart() {
 function setFinal() {
     let state = cleanInput("finalState");
     if (!state) {
-        alert("Please enter a final state.");
+        showToast("Please enter a final state.", "error");
         return;
     }
     if (!states.includes(state)) {
-        alert("Final state must be an existing state.");
+        showToast("Final state must be an existing state.", "error");
         return;
     }
     if (finalStates.includes(state)) {
-        alert("Final state already added.");
+        showToast("Final state already added.", "error");
         return;
     }
     finalStates.push(state);
@@ -429,6 +514,7 @@ function setFinal() {
 
     drawGraph();
     setResultMessage(`Final state ${state} added.`, "state-info");
+    showToast(`Final state ${state} added.`, "success");
     updateStats();
 }
 
@@ -477,6 +563,8 @@ function resetMachine() {
     document.getElementById("inputString").value = "";
 
     setResultMessage("Machine reset. Add states and transitions to begin.", "state-info");
+    setTimeline([]);
+    showToast("Machine reset.", "info");
     updateStats();
 }
 
@@ -484,10 +572,12 @@ function resetMachine() {
 // Simulation
 async function simulate() {
     let input = document.getElementById("inputString").value.toLowerCase();
-    let mode = document.getElementById("mode").value;
+    let mode = getSelectedMode();
+
+    setTimeline([`Mode: ${mode.toUpperCase()}`, `Input: ${input || "(empty)"}`]);
 
     if (!startState) {
-        alert("Please set start state!");
+        showToast("Please set start state!", "error");
         return;
     }
 
@@ -499,11 +589,13 @@ async function simulate() {
         for (let char of input) {
 
             setResultMessage(`Reading: ${char}, Current State: ${current}`, "state-info");
+            appendTimeline(`Read '${char}' at state ${current}`);
 
             await new Promise(r => setTimeout(r, 300));
 
             if (!transitions[current] || !transitions[current][char]) {
                 setResultMessage("Rejected ❌", "state-rejected");
+                appendTimeline(`No transition from ${current} on '${char}' -> Rejected`);
                 return;
             }
 
@@ -522,12 +614,15 @@ async function simulate() {
             edge.removeClass('highlighted');
 
             current = next;
+            appendTimeline(`Moved to ${current}`);
         }
 
         if (finalStates.includes(current)) {
             setResultMessage("Accepted ✅", "state-accepted");
+            appendTimeline(`Final state ${current} reached -> Accepted`);
         } else {
             setResultMessage("Rejected ❌", "state-rejected");
+            appendTimeline(`Stopped at ${current} (not final) -> Rejected`);
         }
 
     }
@@ -540,6 +635,7 @@ async function simulate() {
         for (let char of input) {
 
             setResultMessage(`Reading: ${char}\nCurrent States: ${currentStates.join(", ")}`, "state-info");
+            appendTimeline(`Read '${char}' from {${currentStates.join(", ")}}`);
 
             await new Promise(r => setTimeout(r, 500));
 
@@ -576,8 +672,10 @@ async function simulate() {
             // dead state case
             if (currentStates.length === 0) {
                 setResultMessage("Rejected ❌", "state-rejected");
+                appendTimeline("No reachable states -> Rejected");
                 return;
             }
+            appendTimeline(`Next states: {${currentStates.join(", ")}}`);
         }
 
         // acceptance check
@@ -586,6 +684,7 @@ async function simulate() {
         );
 
         setResultMessage(accepted ? "Accepted ✅" : "Rejected ❌", accepted ? "state-accepted" : "state-rejected");
+        appendTimeline(accepted ? "At least one final state reached -> Accepted" : "No final state in reachable set -> Rejected");
     }
 }
 
@@ -673,14 +772,15 @@ function drawGraph() {
 }
 
 function initGraph() {
-    initTheme();
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.removeItem("fa-sim-theme");
 
     cy = cytoscape({
         container: document.getElementById('cy'),
 
         elements: [],
 
-        style: buildCyStyle(getCurrentTheme()),
+        style: buildCyStyle(),
 
         layout: {
             name: 'preset',
@@ -698,18 +798,9 @@ function initGraph() {
         drawGraph();
     });
 
-    document.getElementById("mode").addEventListener("change", () => {
-        updateStats();
-        updateDefinitionHighlight();
-        setResultMessage("Mode changed. Run simulation again with current machine.", "state-info");
-    });
-
     document.addEventListener("keydown", event => {
         if (event.key === "Escape") {
             hideDefinition();
-        }
-        if (event.key.toLowerCase() === "t" && !["input", "textarea", "select"].includes(document.activeElement.tagName.toLowerCase())) {
-            toggleTheme();
         }
     });
 
@@ -719,6 +810,35 @@ function initGraph() {
         }
     });
 
+    document.getElementById("transitionTableWrap").addEventListener("click", event => {
+        const cell = event.target.closest(".editable-cell");
+        if (!cell) return;
+
+        const { state, symbol } = cell.dataset;
+        const current = transitions[state] && transitions[state][symbol]
+            ? transitions[state][symbol]
+            : [];
+        const mode = getSelectedMode();
+        const currentValue = mode === "dfa" ? (current[0] || "-") : (current.length ? current.join(", ") : "{}");
+        const hint = mode === "dfa"
+            ? `Edit ${state} on '${symbol}' (state name or '-' to clear)`
+            : `Edit ${state} on '${symbol}' (comma-separated states or '{}' to clear)`;
+        const nextInput = prompt(hint, currentValue);
+        if (nextInput === null) return;
+
+        const result = applyTransitionEdit(state, symbol, nextInput);
+        if (!result.ok) {
+            showToast(result.message, "error");
+            return;
+        }
+
+        updateTransitions();
+        drawGraph();
+        showToast(result.message, "success");
+    });
+
     updateStats();
     updateDefinitionHighlight();
+    setTimeline([]);
+    setMode("dfa", { silent: true });
 }
